@@ -1,12 +1,13 @@
 # This example requires the 'message_content' intent.
 
 import discord
+from discord.errors import InteractionResponded
 from discord.ext import commands
 from dotenv import load_dotenv
 from os import getenv
 # own files
 from my_commands import pokemon
-from my_commands.convert_image import convert_images, fetch_images
+from my_commands.convert_image import convert_images, fetch_urls
 
 load_dotenv()
 SECRET_TOKEN: str = getenv("TOKEN") or ""
@@ -41,16 +42,24 @@ async def random_pokemon(interaction):
 @tree.command(guild=GUILD)
 async def convert_img(interaction: discord.Interaction, format: str):
     """Command for converting images to desired formats"""
-    urls = await fetch_images(interaction)
-    converted_images = await convert_images(urls, format)
     try:
-        await interaction.response.send_message(f'here are the files', files=converted_images)
+        urls = await fetch_urls(interaction)
+        converted_images = await convert_images(urls, format)
+    except AttributeError as error:
+        await interaction.response.send_message(f'`{error}`')
+    except ValueError as error:
+        await interaction.response.send_message(f'`{error}`')
+    except LookupError as error:
+        await interaction.response.send_message(f'`{error}`')
     except discord.errors.NotFound as err:
         print(err)
-        await interaction.response.send_message('404, Interaction is no longer available. Try again')
-    except Exception as err:
-        print(err)
-        await interaction.response.send_message(f'no image attachments were found from last message')
+        await interaction.response.send_message('`404, Interaction is no longer available. Try again`')
+    except Exception as error:
+        print(f'{error.__class__.__name__}: error')
+        await interaction.response.send_message('`Unknown error occured`')
+    else:
+        # if everything works as expected
+        await interaction.response.send_message(f'here are the files', files=converted_images)
 
 
 @client.event
