@@ -1,9 +1,8 @@
 from discord import Client
 from discord.flags import Intents
 from typing import Dict
-import json
-from random import randint
 from .get_api import fetch_api
+from .jsonutils import read_from_json, write_to_json
 
 
 class Raino(Client):
@@ -36,23 +35,6 @@ class Raino(Client):
         # then fetch the random rock
         rock_data = fetch_api(f'https://rockapi.apiworks.tech/rock/random')
         return rock_data
-
-
-def read_from_json(file_url: str) -> dict:
-    try:
-        with open(file_url, 'r') as file:
-            data = file.read()
-            return json.loads(data)
-    except OSError:
-        print(
-            f"File not found or couldn't be opened. Creating new one at {file_url}")
-        write_to_json(file_url)
-        return {}
-
-
-def write_to_json(file_url: str, write_data: dict = {}) -> None:
-    with open(file_url, 'w') as file:
-        file.write(json.dumps(write_data))
 
 
 if __name__ == "__main__":

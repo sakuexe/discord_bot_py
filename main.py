@@ -6,12 +6,15 @@ from dotenv import load_dotenv
 from os import getenv
 from textwrap import dedent
 import time
+import re
 # own files
 from my_commands import pokemon
 from my_commands.convert_image import convert_images, fetch_urls
+from my_commands.scoreutils import pretty_listing, clean_scoreboard
 from scripts.image_process import remove_bg
 # import Raino as a client
-from scripts.collections import Raino
+from scripts.raino import Raino
+from scripts.scores import UserScores
 
 load_dotenv()
 SECRET_TOKEN: str = getenv("TOKEN") or ""
@@ -25,8 +28,9 @@ intents.message_content = True
 
 client = Raino(
     intents=intents, activity=INACTIVE, status=discord.Status.idle)
-bot = commands.Bot(command_prefix="!", intents=intents, activity=INACTIVE)
 tree = discord.app_commands.CommandTree(client)
+
+USERSCORES = UserScores()
 
 
 async def toggle_activity(name: str = '') -> None:
@@ -78,26 +82,54 @@ async def convert_img(interaction: discord.Interaction, format: str):
     await toggle_activity()
 
 
+@tree.command(guild=GUILD)
+async def rocks(interaction: discord.Interaction):
+    """Show the amount of rocks the bot has collected"""
+    await toggle_activity('Counting rocks')
+    time.sleep(1)
+    await interaction.response.send_message(f'I currently hold onto {client.rocks} rocks')
+    await toggle_activity()
+
+
+@tree.command(guild=GUILD)
+async def show_rock(interaction: discord.Interaction):
+    """Show the amount of rocks the bot has collected"""
+    await toggle_activity('Looking for a cool rock')
+    display_rock = client.fetch_random_rock()
+    rock_info = dedent(f"""
+    This rock is called the {display_rock['name']}, {display_rock['description']}
+    """)
+    # send a message about a random rock, with the image as a url
+    await interaction.response.send_message(rock_info)
+    await interaction.channel.send(display_rock['image'])
+    await toggle_activity()
+
+
+@tree.command(guild=GUILD)
+async def scoreboard(interaction: discord.Interaction):
+    """List the scoreboard and everyone's scores"""
+    await toggle_activity('Counting everyone\'s rocks')
+    # maintain the validity of the scoreboard
+    await clean_scoreboard(USERSCORES, client)
+    scores = await pretty_listing(USERSCORES.get_rocks(), client)
+    await interaction.response.send_message(f'Here are the scores: \n```json\n{scores}```')
+    await toggle_activity()
+
+
 @client.event
 async def on_message(message: discord.Message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('!rocks'):
-        await toggle_activity('Counting rocks')
-        await message.add_reaction('🤔')
-        time.sleep(3)
-        await message.channel.send(f'I currently hold onto {client.rocks} rocks')
-        await toggle_activity()
+    if re.search(r'\brocks?\b', message.content, re.MULTILINE | re.IGNORECASE):
+        await message.add_reaction('🪨')
+        await message.add_reaction('❔')
+        await message.add_reaction('🙏')
 
-    if message.content.startswith('!show rock'):
-        display_rock = client.fetch_random_rock()
-        rock_info = dedent(f"""
-        Rock: {display_rock['name']}
-        Description: {display_rock['description']}
-        """)
-        await message.channel.send(rock_info)
-        await message.channel.send(display_rock['image'])
+    if message.content.startswith('!give'):
+        author_id = str(message.author.id)
+        USERSCORES.give_rocks(author_id, 1)
+        await message.channel.send(f'I gave you a rock')
 
 
 @client.event
