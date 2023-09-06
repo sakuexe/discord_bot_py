@@ -3,5 +3,5 @@ __pycache__/
 venv/
 
 # Raino local settings and data
-raino_states.json
+raino_status.json
 scores.json
