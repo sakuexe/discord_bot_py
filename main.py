@@ -2,8 +2,6 @@
 
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
-from os import getenv
 from textwrap import dedent
 import time
 import re
@@ -12,13 +10,12 @@ from my_commands import pokemon
 from my_commands.convert_image import convert_images, fetch_urls
 from my_commands.scoreutils import pretty_listing, clean_scoreboard
 from scripts.image_process import remove_bg
+from scripts.initvalues import get_init_values
 # import Raino as a client
 from scripts.raino import Raino
 from scripts.scores import UserScores
 
-load_dotenv()
-SECRET_TOKEN: str = getenv("TOKEN") or ""
-GUILD_ID: str = getenv("GUILD") or ""
+SECRET_TOKEN, GUILD_ID = get_init_values()
 GUILD: discord.Object = discord.Object(id=GUILD_ID)
 INACTIVE: discord.Activity = discord.Activity(
     type=discord.ActivityType.watching, name="his rocks")

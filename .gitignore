@@ -1,5 +1,6 @@
 .env
 __pycache__/
+venv/
 
 # Raino local settings and data
 raino_states.json
